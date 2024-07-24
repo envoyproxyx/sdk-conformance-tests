@@ -116,6 +116,7 @@ func main() {
 				defer wg.Done()
 				log.Printf("Running test %s", name)
 				test(&T{name: name})
+				log.Printf("Test %s passed", name)
 			}()
 		}
 		wg.Wait()
