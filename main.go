@@ -20,7 +20,7 @@ import (
 )
 
 //go:embed envoy.yaml
-var envoyYaml []byte
+var envoyYaml string
 
 var (
 	stdOut                    *bytes.Buffer
@@ -40,7 +40,10 @@ func (t *T) Errorf(format string, args ...interface{}) {
 
 func (t *T) FailNow() { panic("FailNow") }
 
-var target = flag.String("target", "", "target to test")
+var (
+	target            = flag.String("target", "", "target to test")
+	sharedLibraryPath = flag.String("shared-library-path", "./main", "path to the shared library to test")
+)
 
 func main() {
 	flag.Parse()
@@ -51,12 +54,20 @@ func main() {
 	}
 	defer os.RemoveAll(envoyYamlTmp.Name())
 
+	t := &T{name: "main"}
+
+	// Check if a binary named main exists.
+	derefSharedLibraryPath := *sharedLibraryPath
+	_, err = os.Stat(derefSharedLibraryPath)
+	require.NoErrorf(t, err, "shared library at %s not found. Please build it.", derefSharedLibraryPath)
+
+	// Replace SHARED_LIBRARY_PATH with the actual path to the shared library.
+	envoyYaml = strings.ReplaceAll(string(envoyYaml), "SHARED_LIBRARY_PATH", derefSharedLibraryPath)
+
 	// Write the envoy.yaml file to the temp directory.
-	if _, err := envoyYamlTmp.Write(envoyYaml); err != nil {
+	if _, err := envoyYamlTmp.WriteString(envoyYaml); err != nil {
 		log.Fatalf("failed to write envoy.yaml: %v", err)
 	}
-
-	t := &T{}
 
 	l, err := net.Listen("tcp", "127.0.0.1:8199")
 	require.NoError(t, err)
@@ -81,10 +92,6 @@ func main() {
 	// Check if `envoy` is installed.
 	_, err = exec.LookPath("envoy")
 	require.NoError(t, err, "envoy binary not found. Please install it from containers at https://github.com/envoyproxyx/envoyx/pkgs/container/envoy")
-
-	// Check if a binary named main exists.
-	_, err = os.Stat("./main")
-	require.NoError(t, err, "./main not found. Please build it.")
 
 	cmd := exec.Command("envoy", "--concurrency", "1", "-c", envoyYamlTmp.Name())
 	stdOut, stdErr = new(bytes.Buffer), new(bytes.Buffer)
