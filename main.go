@@ -91,7 +91,7 @@ func main() {
 
 	// Check if `envoy` is installed.
 	_, err = exec.LookPath("envoy")
-	require.NoError(t, err, "envoy binary not found. Please install it from containers at https://github.com/envoyproxyx/envoyx/pkgs/container/envoy")
+	require.NoError(t, err, "envoy binary not found. Please install it from containers at https://github.com/mathetake/envoy-dynamic-modules/pkgs/container/envoy")
 
 	cmd := exec.Command("envoy", "--concurrency", "1", "-c", envoyYamlTmp.Name())
 	stdOut, stdErr = new(bytes.Buffer), new(bytes.Buffer)

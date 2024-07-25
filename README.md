@@ -1,19 +1,10 @@
 # SDK conformance tests
 
-This repository contains the SDK conformance tests for the EnvoyX project. 
+This repository contains the SDK conformance tests for the Envoy dynamic modules.
 
-```
-go install github.com/envoyproxyx/sdk-conformance-tests
-```
+## Links
 
-## Running the tests
-
-Assuming the EnvoyX binary and the shared library named `main` is in the current directory, you can run the tests with the following command:
-
-```
-# To run the all the tests
-sdk-conformance-tests
-
-# To run a specific test
-sdk-conformance-tests --target=TestHelloWorld
-```
+- [mathetake/envoy-dynamic-modules](https://github.com/mathetake/envoy-dynamic-modules): The main repository for the dynamic modules.
+- [mathetake/envoy-dynamic-modules-abi](https://github.com/mathetake/envoy-dynamic-modules-abi): The repository for the ABI definitions of the dynamic modules.
+- [mathetake/envoy-dynamic-modules-go-sdk](https://github.com/mathetake/envoy-dynamic-modules-go-sdk): The Rust Go for the dynamic modules.
+- [mathetake/envoy-dynamic-modules-rust-sdk](https://github.com/mathetake/envoy-dynamic-modules-rust-sdk): The Rust SDK for the dynamic modules.

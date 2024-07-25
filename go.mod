@@ -1,4 +1,4 @@
-module github.com/envoyproxyx/sdk-conformance-tests
+module github.com/mathetake/envoy-dynamic-modules-sdk-conformance-tests
 
 go 1.22.5
 
