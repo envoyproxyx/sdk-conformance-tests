@@ -24,7 +24,6 @@ var envoyYaml string
 
 var (
 	stdOut                    *bytes.Buffer
-	stdErr                    *bytes.Buffer
 	testUpstreamHandler       = map[string]http.HandlerFunc{}
 	testUpstreamHeandlerMutex sync.Mutex
 )
@@ -50,7 +49,7 @@ func main() {
 
 	envoyYamlTmp, err := os.CreateTemp("", "*.yaml")
 	if err != nil {
-		log.Fatalf("failed to create temp dir: %v", err)
+		log.Panicf("failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(envoyYamlTmp.Name())
 
@@ -66,7 +65,7 @@ func main() {
 
 	// Write the envoy.yaml file to the temp directory.
 	if _, err := envoyYamlTmp.WriteString(envoyYaml); err != nil {
-		log.Fatalf("failed to write envoy.yaml: %v", err)
+		log.Panicf("failed to write envoy.yaml: %v", err)
 	}
 
 	l, err := net.Listen("tcp", "127.0.0.1:8199")
@@ -94,18 +93,19 @@ func main() {
 	require.NoError(t, err, "envoy binary not found. Please install it from containers at https://github.com/mathetake/envoy-dynamic-modules/pkgs/container/envoy")
 
 	cmd := exec.Command("envoy", "--concurrency", "1", "-c", envoyYamlTmp.Name())
-	stdOut, stdErr = new(bytes.Buffer), new(bytes.Buffer)
+	stdOut = new(bytes.Buffer)
 	cmd.Stdout = stdOut
-	cmd.Stderr = stdErr
+	cmd.Stderr = os.Stderr
 	require.NoError(t, cmd.Start())
-	defer func() { require.NoError(t, cmd.Process.Signal(os.Interrupt)) }()
+	defer func() { require.NoError(t, cmd.Process.Kill()) }()
 
 	if *target != "" {
 		if test, ok := testCases[*target]; ok {
 			log.Printf("Running test %s", *target)
 			test(&T{name: *target})
+			log.Printf("Test %s passed", *target)
 		} else {
-			log.Fatalf("test case %s not found", *target)
+			log.Panicf("test case %s not found", *target)
 		}
 	} else {
 		var wg sync.WaitGroup
@@ -126,7 +126,7 @@ func main() {
 var testCases = map[string]func(*T){
 	"TestHelloWorld":    TestHelloWorld,
 	"TestHeaders":       TestHeaders,
-	"TestDelayFilter":   TestDelayFilter,
+	"TestDelay":         TestDelayFilter,
 	"TestBodies":        TestBodies,
 	"TestBodiesReplace": TestBodiesReplace,
 }
