@@ -129,6 +129,7 @@ var testCases = map[string]func(*T){
 	"TestDelay":         TestDelayFilter,
 	"TestBodies":        TestBodies,
 	"TestBodiesReplace": TestBodiesReplace,
+	"TestSendReplay":    TestSendReplay,
 }
 
 func TestHeaders(t *T) {
@@ -420,6 +421,63 @@ func TestBodiesReplace(t *T) {
 			}, 5*time.Second, 100*time.Millisecond, "Envoy has not started: %s", stdOut.String())
 		}()
 	}
+	wg.Wait()
+}
+
+func TestSendReplay(t *T) {
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		require.Eventually(t, func() bool {
+			req, err := http.NewRequest("GET", "http://localhost:15005/on_request", nil)
+			if err != nil {
+				return false
+			}
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return false
+			}
+			defer res.Body.Close()
+
+			resBody, err := io.ReadAll(res.Body)
+			if err != nil {
+				return false
+			}
+			fmt.Println(res.Header)
+			fmt.Println(string(resBody))
+			require.Equal(t, "bar", res.Header.Get("foo"))
+			require.Equal(t, "baz", res.Header.Get("bar"))
+			require.Equal(t, "local response at request headers", string(resBody))
+			return res.StatusCode == http.StatusUnauthorized
+		}, 5*time.Second, 100*time.Millisecond, "Envoy has not started: %s", stdOut.String())
+	}()
+
+	go func() {
+		defer wg.Done()
+		require.Eventually(t, func() bool {
+			req, err := http.NewRequest("GET", "http://localhost:15005/on_response", nil)
+			if err != nil {
+				return false
+			}
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return false
+			}
+			defer res.Body.Close()
+
+			resBody, err := io.ReadAll(res.Body)
+			if err != nil {
+				return false
+			}
+			fmt.Println(res.Header)
+			fmt.Println(string(resBody))
+			require.Equal(t, "cat", res.Header.Get("dog"))
+			require.Equal(t, "local response at response headers", string(resBody))
+			return res.StatusCode == http.StatusInternalServerError
+		}, 5*time.Second, 100*time.Millisecond, "Envoy has not started: %s", stdOut.String())
+	}()
 	wg.Wait()
 }
 
